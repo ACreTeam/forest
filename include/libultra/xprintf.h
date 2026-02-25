@@ -1,7 +1,8 @@
 #ifndef XRINTF_H
 #define XRINTF_H
 
-#include "types.h"
+#include <dolphin/types.h>
+#include <stdarg.h>
 // #include "va_args.h"
 
 #ifdef __cplusplus

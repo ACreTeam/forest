@@ -73,6 +73,7 @@ bool JKRAramArchive::mountFixed(s32 entryNum, EMountDirection direction) {
         return false;
 
     fixedInit(entryNum, direction);
+    OSReport("Warning: JKRAramArchive::mountFixed(): entryNum = %d.\n", entryNum);
     if (open(entryNum) == false) {
         return false;
     }
@@ -108,8 +109,15 @@ void JKRAramArchive::unmountFixed() {
     if (mDvdFile)
         delete mDvdFile;
 
+#ifndef TARGET_PC
     if (mBlock)
         delete mBlock;
+#else
+    // TODO: fix this delete call
+    // if (mBlock)
+    //     JKRFreeToAram(mBlock);
+    mBlock = nullptr;
+#endif
 
     sVolumeList.remove(&mFileLoaderLink);
     mIsMounted = false;
@@ -122,11 +130,19 @@ bool JKRAramArchive::open(s32 entryNum) {
     mStrTable = nullptr;
     mBlock = nullptr;
 
+    OSReport("Warning: JKRAramArchive::open(): entryNum = %d.\n", entryNum);
+
+#ifndef TARGET_PC
     mDvdFile = new (JKRGetSystemHeap(), mMountDirection == MOUNT_DIRECTION_HEAD ? 4 : -4) JKRDvdFile(entryNum);
+#else
+    mDvdFile = new JKRDvdFile(entryNum);
+#endif
     if (mDvdFile == nullptr) {
         mMountMode = 0;
         return 0;
     }
+
+    OSReport("Warning: JKRAramArchive::open(): mDvdFile->mDvdFileInfo.length = %d.\n", mDvdFile->getFileSize());
 
     // NOTE: a different struct is used here for sure, unfortunately i can't get
     // any hits on this address, so gonna leave it like this for now
@@ -136,6 +152,16 @@ bool JKRAramArchive::open(s32 entryNum) {
     } else {
         JKRDvdToMainRam(entryNum, (u8*)mem, EXPAND_SWITCH_DECOMPRESS, 32, nullptr, JKRDvdRipper::ALLOC_DIR_TOP, 0,
                         &mCompression);
+
+        // Bswap SArcHeader info
+        mem->file_length = BSWAP32(mem->file_length);
+        mem->header_length = BSWAP32(mem->header_length);
+        mem->file_data_offset = BSWAP32(mem->file_data_offset);
+        mem->file_data_length = BSWAP32(mem->file_data_length);
+        mem->_14 = BSWAP32(mem->_14);
+        mem->_18 = BSWAP32(mem->_18);
+        mem->_1C = BSWAP32(mem->_1C);
+
         int alignment = mMountDirection == MOUNT_DIRECTION_HEAD ? 32 : -32;
         u32 alignedSize = ALIGN_NEXT(mem->file_data_offset, 32);
         mArcInfoBlock = (SArcDataInfo*)JKRAllocFromHeap(mHeap, alignedSize, alignment);
@@ -144,6 +170,20 @@ bool JKRAramArchive::open(s32 entryNum) {
         } else {
             JKRDvdToMainRam(entryNum, (u8*)mArcInfoBlock, EXPAND_SWITCH_DECOMPRESS, alignedSize, nullptr,
                             JKRDvdRipper::ALLOC_DIR_TOP, 32, nullptr);
+
+            // Bswap SArcDataInfo info
+            mArcInfoBlock->node_offset = BSWAP32(mArcInfoBlock->node_offset);
+            mArcInfoBlock->file_entry_offset = BSWAP32(mArcInfoBlock->file_entry_offset);
+            mArcInfoBlock->string_table_offset = BSWAP32(mArcInfoBlock->string_table_offset);
+            mArcInfoBlock->num_nodes = BSWAP32(mArcInfoBlock->num_nodes);
+            mArcInfoBlock->num_file_entries = BSWAP32(mArcInfoBlock->num_file_entries);
+            mArcInfoBlock->string_table_length = BSWAP32(mArcInfoBlock->string_table_length);
+            mArcInfoBlock->nextFreeFileID = BSWAP16(mArcInfoBlock->nextFreeFileID);
+
+            OSReport("Warning: JKRAramArchive::open(): mArcInfoBlock->node_offset = %d.\n", mArcInfoBlock->node_offset);
+            OSReport("Warning: JKRAramArchive::open(): mArcInfoBlock->file_entry_offset = %d.\n", mArcInfoBlock->file_entry_offset);
+            OSReport("Warning: JKRAramArchive::open(): mArcInfoBlock->string_table_offset = %d.\n", mArcInfoBlock->string_table_offset);
+
 
             mDirectories = (SDIDirEntry*)((u8*)mArcInfoBlock + mArcInfoBlock->node_offset);
             mFileEntries = (SDIFileEntry*)((u8*)mArcInfoBlock + mArcInfoBlock->file_entry_offset);
@@ -157,6 +197,25 @@ bool JKRAramArchive::open(s32 entryNum) {
             } else {
                 JKRDvdToAram(entryNum, mBlock->getAddress(), EXPAND_SWITCH_DECOMPRESS,
                              mem->header_length + mem->file_data_offset, 0);
+                for (int i = 0; i < mArcInfoBlock->num_file_entries; i++) {
+                    SDIFileEntry& fileEntry = mFileEntries[i];
+
+                    fileEntry.mFileID = BSWAP16(fileEntry.mFileID);
+                    fileEntry.mHash = BSWAP16(fileEntry.mHash);
+                    fileEntry.mFlag = BSWAP32(fileEntry.mFlag);
+                    fileEntry.mDataOffset = BSWAP32(fileEntry.mDataOffset);
+                    fileEntry.mSize = BSWAP32(fileEntry.mSize);
+                }
+
+                for (int i = 0; i < mArcInfoBlock->num_nodes; i++) {
+                    SDIDirEntry& dirEntry = mDirectories[i];
+
+                    dirEntry.mType = BSWAP32(dirEntry.mType);
+                    dirEntry.mOffset = BSWAP32(dirEntry.mOffset);
+                    dirEntry._08 = BSWAP16(dirEntry._08);
+                    dirEntry.mNum = BSWAP16(dirEntry.mNum);
+                    dirEntry.mFirstIdx = BSWAP32(dirEntry.mFirstIdx);
+                }
             }
         }
     }

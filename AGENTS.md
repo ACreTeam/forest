@@ -294,6 +294,8 @@ cmake -G Ninja -B build_pc `
     -DCMAKE_BUILD_TYPE=Debug
 ```
 
+To use MSVC's **link.exe** instead of lld-link (e.g. for reliable `animal_crossing.lib` import library generation), add `-DFOREST_USE_MSVC_LINKER=ON` and omit `-DCMAKE_LINKER=...`. The project will locate `link.exe` from your Visual Studio install. Alternatively, set `-DCMAKE_LINKER=".../VC/Tools/MSVC/<ver>/bin/Hostx86/x86/link.exe"` to a specific path.
+
 This generates Ninja build files in `build_pc/`. A `compile_commands.json` is also produced for IDE/tooling support.
 
 ### Build

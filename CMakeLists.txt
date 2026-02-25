@@ -1,4 +1,79 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.29)
+
+# Option: use MSVC link.exe instead of lld-link (e.g. for reliable import lib generation).
+# Must be set before the first project(). Use CMAKE_LINKER_TYPE=MSVC (3.29+) so the
+# generator actually invokes link.exe; CMAKE_LINKER alone is often ignored with clang-cl.
+# Re-run configure after changing (e.g. -DFOREST_USE_MSVC_LINKER=ON). Clear build dir if
+# the linker still doesn't change (e.g. delete build_pc/CMakeCache.txt and CMakeFiles).
+set(FOREST_USE_MSVC_LINKER OFF CACHE BOOL "Use MSVC link.exe instead of lld-link (Windows, clang-cl)")
+if(CMAKE_HOST_WIN32 AND FOREST_USE_MSVC_LINKER)
+  if(NOT DEFINED CMAKE_C_COMPILER OR "CMAKE_C_COMPILER-NOTFOUND" STREQUAL "${CMAKE_C_COMPILER}")
+    message(FATAL_ERROR "FOREST_USE_MSVC_LINKER requires CMAKE_C_COMPILER to be set (e.g. clang-cl). Set it and re-run configure.")
+  endif()
+  get_filename_component(_clang_dir "${CMAKE_C_COMPILER}" DIRECTORY)
+  # Clang-cl is in VC/Tools/Llvm/bin; VC is three levels up (bin -> Llvm -> Tools -> VC).
+  get_filename_component(_vc_dir "${_clang_dir}" PATH)
+  get_filename_component(_vc_dir "${_vc_dir}" PATH)
+  get_filename_component(_vc_dir "${_vc_dir}" PATH)
+  file(GLOB _msvc_vers "${_vc_dir}/Tools/MSVC/*")
+  list(LENGTH _msvc_vers _n_vers)
+  if(_n_vers GREATER 0)
+    list(GET _msvc_vers 0 _msvc_ver)
+    set(_link_exe "${_msvc_ver}/bin/Hostx86/x86/link.exe")
+    if(EXISTS "${_link_exe}")
+      set(CMAKE_LINKER "${_link_exe}" CACHE FILEPATH "MSVC link.exe (FOREST_USE_MSVC_LINKER)" FORCE)
+      # Force generator to use MSVC linker (clang-cl otherwise defaults to lld-link).
+      set(CMAKE_LINKER_TYPE "MSVC" CACHE STRING "Use MSVC link.exe" FORCE)
+      set(CMAKE_C_USING_LINKER_MSVC "${_link_exe}" CACHE STRING "" FORCE)
+      set(CMAKE_CXX_USING_LINKER_MSVC "${_link_exe}" CACHE STRING "" FORCE)
+      message(STATUS "Using MSVC link: ${CMAKE_LINKER}")
+      # Add Windows SDK lib path so link.exe finds kernel32.lib etc. when not using a
+      # Developer Prompt. Required for CMake's try_compile in project() and for normal builds.
+      file(GLOB _sdk_vers "C:/Program Files (x86)/Windows Kits/10/Lib/*")
+      list(SORT _sdk_vers)
+      list(REVERSE _sdk_vers)
+      list(LENGTH _sdk_vers _n_sdk)
+      if(_n_sdk GREATER 0)
+        list(GET _sdk_vers 0 _sdk_ver)
+        set(_sdk_um_x86 "${_sdk_ver}/um/x86")
+        if(EXISTS "${_sdk_um_x86}")
+          set(_libpath "/LIBPATH:\"${_sdk_um_x86}\"")
+          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_libpath}" CACHE STRING "" FORCE)
+          set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_libpath}" CACHE STRING "" FORCE)
+          set(ENV{LIB} "${_sdk_um_x86};$ENV{LIB}")
+          # Use full paths for standard libs so try_compile link line finds them without LIB.
+          set(_std_libs kernel32 user32 gdi32 winspool shell32 ole32 oleaut32 uuid comdlg32 advapi32)
+          set(_std_libs_full "")
+          foreach(_lib IN LISTS _std_libs)
+            list(APPEND _std_libs_full "${_sdk_um_x86}/${_lib}.lib")
+          endforeach()
+          string(REPLACE ";" " " _std_libs_str "${_std_libs_full}")
+          set(CMAKE_C_STANDARD_LIBRARIES "${_std_libs_str}" CACHE STRING "" FORCE)
+          set(CMAKE_CXX_STANDARD_LIBRARIES "${_std_libs_str}" CACHE STRING "" FORCE)
+          message(STATUS "Windows SDK lib path: ${_sdk_um_x86}")
+        endif()
+      endif()
+      unset(_sdk_vers)
+      unset(_n_sdk)
+      unset(_sdk_ver)
+      unset(_sdk_um_x86)
+      unset(_libpath)
+      unset(_std_libs)
+      unset(_std_libs_full)
+      unset(_std_libs_str)
+    else()
+      message(FATAL_ERROR "FOREST_USE_MSVC_LINKER: link.exe not found at ${_link_exe}")
+    endif()
+  else()
+    message(FATAL_ERROR "FOREST_USE_MSVC_LINKER: could not find MSVC version under ${_vc_dir}/Tools/MSVC")
+  endif()
+  unset(_clang_dir)
+  unset(_vc_dir)
+  unset(_msvc_vers)
+  unset(_n_vers)
+  unset(_msvc_ver)
+  unset(_link_exe)
+endif()
 
 project(forest
     LANGUAGES C CXX
@@ -25,6 +100,7 @@ set(CPM_aurora_SOURCE "${PROJECT_SOURCE_DIR}/../aurora")
 
 CPMAddPackage(
   NAME aurora
+  unset(_link_lower)
   GITHUB_REPOSITORY encounter/aurora
   GIT_TAG bd20b65d59c2bd119e078ee87a8b896cc82994d2
   OPTIONS
@@ -875,6 +951,31 @@ endif()
 set(FOREST_ALL_LIBS ${FOREST_STATIC_LIBS} ${FOREST_REL_LIBS})
 
 # ==============================================================================
+# Windows SDK library path for MSVC link.exe
+# ==============================================================================
+# When using FOREST_USE_MSVC_LINKER, link.exe is invoked directly and may not have
+# LIB set (e.g. when not using a Developer Prompt). Add the Windows Kits lib path
+# so kernel32.lib, user32.lib, etc. are found.
+if(CMAKE_HOST_WIN32 AND FOREST_USE_MSVC_LINKER)
+  file(GLOB _sdk_vers "C:/Program Files (x86)/Windows Kits/10/Lib/*")
+  list(SORT _sdk_vers)
+  list(REVERSE _sdk_vers)
+  list(LENGTH _sdk_vers _n_sdk)
+  if(_n_sdk GREATER 0)
+    list(GET _sdk_vers 0 _sdk_ver)
+    set(_sdk_um_x86 "${_sdk_ver}/um/x86")
+    if(EXISTS "${_sdk_um_x86}")
+      set(WINDOWS_SDK_LIB_PATH "${_sdk_um_x86}" CACHE PATH "Windows SDK um/x86 for link.exe")
+      message(STATUS "Windows SDK lib path: ${WINDOWS_SDK_LIB_PATH}")
+    endif()
+  endif()
+  unset(_sdk_vers)
+  unset(_n_sdk)
+  unset(_sdk_ver)
+  unset(_sdk_um_x86)
+endif()
+
+# ==============================================================================
 # DOL Executable — Main game binary
 # ==============================================================================
 # On the GameCube, the DOL is the main executable containing engine code
@@ -883,6 +984,9 @@ set(FOREST_ALL_LIBS ${FOREST_STATIC_LIBS} ${FOREST_REL_LIBS})
 # Engine symbols are exported so the REL module (DLL) can call them.
 
 add_executable(forest_dol src/pc/dol_main.c)
+if(WINDOWS_SDK_LIB_PATH)
+  target_link_directories(forest_dol PRIVATE "${WINDOWS_SDK_LIB_PATH}")
+endif()
 target_link_libraries(forest_dol PRIVATE
     ${FOREST_STATIC_LIBS}
     aurora::core
@@ -896,11 +1000,13 @@ target_link_libraries(forest_dol PRIVATE
 set_target_properties(forest_dol PROPERTIES
     OUTPUT_NAME "animal_crossing"
     ENABLE_EXPORTS TRUE
+    WINDOWS_EXPORT_ALL_SYMBOLS TRUE
 )
 
 # Export all symbols from the executable so the REL DLL can link against them.
-# ENABLE_EXPORTS generates the import library. We force all symbols to be exported
-# without needing __declspec(dllexport) annotations.
+# ENABLE_EXPORTS makes CMake generate an import library (animal_crossing.lib) for
+# the executable; foresta_rel links to it. WINDOWS_EXPORT_ALL_SYMBOLS forces a .def
+# to be generated so the linker actually exports symbols and produces the .lib.
 if(MSVC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_SIMULATE_ID STREQUAL "MSVC")
     # Keep all objects from engine static libs in the EXE so their symbols are
     # available to the REL import library.
@@ -928,8 +1034,12 @@ add_library(foresta_rel SHARED
     src/pc/rel_main.c
     src/pc/foresta_rel_stubs.c
 )
+if(WINDOWS_SDK_LIB_PATH)
+  target_link_directories(foresta_rel PRIVATE "${WINDOWS_SDK_LIB_PATH}")
+endif()
 target_link_libraries(foresta_rel PRIVATE forest_common)
-target_link_libraries(foresta_rel PRIVATE aurora::mtx)
+# Aurora OS/core so REL resolves OSGetTime, OSBaseAddress, OSInit, etc. (same as DOL).
+target_link_libraries(foresta_rel PRIVATE aurora::os aurora::core aurora::mtx)
 set_target_properties(foresta_rel PROPERTIES
     OUTPUT_NAME "foresta_mod"
 )

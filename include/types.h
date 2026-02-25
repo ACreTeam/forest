@@ -7,8 +7,19 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <intrin.h>
 #include <dolphin/types.h>
 #include "macros.h"
+
+#ifdef TARGET_PC
+#define BSWAP16(x) _byteswap_ushort(x)
+#define BSWAP32(x) _byteswap_ulong(x)
+#define BSWAP64(x) _byteswap_uint64(x)
+#else
+#define BSWAP16(x) x
+#define BSWAP32(x) x
+#define BSWAP64(x) x
+#endif
 
 #define VER_GAFE01_00 0
 #define VER_GAFU01_00 1

@@ -60,6 +60,7 @@ struct DVDFileInfo
     /*0x30*/ u32 startAddr;
     /*0x34*/ u32 length;
     /*0x38*/ DVDCallback callback;
+    /*0x3C*/ s32 entrynum;
 };
 
 // Struct for directory information (size 0xC).

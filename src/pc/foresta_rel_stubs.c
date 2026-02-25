@@ -4,7 +4,6 @@
 #include <stdlib.h>
 
 void HotResetIplMenu(void) {}
-void* HotStartEntry = NULL;
 int dvderr_draw(void) { return 0; }
 void JW_BeginFrame(void) {}
 void JW_EndFrame(void) {}

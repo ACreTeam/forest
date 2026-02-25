@@ -1292,8 +1292,8 @@ s32 DVDGetCommandBlockStatus(const struct DVDCommandBlock * block) {
     ASSERTMSGLINE(0xB39, block, "DVDGetCommandBlockStatus(): null pointer is specified to command block address.");
     enabled = OSDisableInterrupts();
 
-	if (block->state == 3) {
-		retVal = 1;
+	if (block->state == DVD_STATE_COVER_CLOSED) {
+		retVal = DVD_STATE_BUSY;
 	} else {
 		retVal = block->state;
 	}

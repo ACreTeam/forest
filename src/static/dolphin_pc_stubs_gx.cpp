@@ -4,6 +4,294 @@
 #ifdef TARGET_PC
 
 #include <dolphin/types.h>
+#include <dolphin/dvd.h>
+#include <dolphin/os.h>
+#include <fstream>
+#include <filesystem>
+
+#include <stdint.h>
+
+#if !defined(_WIN32) && !defined(_WIN64)
+#  include <sys/stat.h>
+#  include <errno.h>
+#  include <string.h>
+#endif
+
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#include <limits.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <unistd.h>
+#include <limits.h>
+#endif
+
+/**
+ * Get a unique, stable identifier for the file at the given path.
+ * Same path always yields the same id on the same volume until the file is deleted/recreated.
+ * Returns 0 on error (file not found, no permission, etc.).
+ */
+int32_t file_unique_id(const char* path) {
+#if defined(_WIN32) || defined(_WIN64)
+    HANDLE h = CreateFileA(path,
+        FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+    BY_HANDLE_FILE_INFORMATION info;
+    if (!GetFileInformationByHandle(h, &info)) {
+        CloseHandle(h);
+        return -1;
+    }
+    CloseHandle(h);
+    return ((int32_t)info.nFileIndexLow);
+#else
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return -1;
+    return (int32_t)st.st_ino;
+#endif
+}
+
+std::filesystem::path getExecutablePath() {
+#if defined(_WIN32)
+    // Windows implementation
+    wchar_t path[MAX_PATH] = { 0 };
+    GetModuleFileNameW(NULL, path, MAX_PATH);
+    return std::filesystem::path(path);
+
+#elif defined(__linux__)
+    // Linux implementation
+    char result[PATH_MAX];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    return std::filesystem::path(std::string(result, (count > 0) ? count : 0));
+
+#elif defined(__APPLE__)
+    // macOS implementation
+    char path[PATH_MAX];
+    uint32_t size = sizeof(path);
+    if (_NSGetExecutablePath(path, &size) == 0) {
+        return std::filesystem::path(path);
+    }
+    return std::filesystem::path();
+#else
+    #error "OS not supported"
+#endif
+}
+
+/**
+ * Recursive helper: search under dir for a file with the given id.
+ * Returns true and writes the path into out_path (up to out_size) if found.
+ */
+static bool find_file_by_id_under(int32_t id, const char* dir, char* out_path, size_t out_size) {
+#if defined(_WIN32) || defined(_WIN64)
+    char pattern[MAX_PATH];
+    snprintf(pattern, sizeof(pattern), "%s\\*", dir);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    if (h == INVALID_HANDLE_VALUE)
+        return false;
+    do {
+        if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0)
+            continue;
+        char full[MAX_PATH];
+        snprintf(full, sizeof(full), "%s\\%s", dir, fd.cFileName);
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            if (find_file_by_id_under(id, full, out_path, out_size))
+                goto found;
+        } else {
+            if (file_unique_id(full) == id) {
+                strncpy(out_path, full, out_size - 1);
+                out_path[out_size - 1] = '\0';
+                goto found;
+            }
+        }
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    return false;
+found:
+    FindClose(h);
+    return true;
+#else
+    DIR* d = opendir(dir);
+    if (!d)
+        return false;
+    struct dirent* ent;
+    bool found = false;
+    while ((ent = readdir(d)) != NULL) {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            continue;
+        char full[4096];
+        snprintf(full, sizeof(full), "%s/%s", dir, ent->d_name);
+        struct stat st;
+        if (lstat(full, &st) != 0)
+            continue;
+        if (S_ISDIR(st.st_mode)) {
+            if (find_file_by_id_under(id, full, out_path, out_size)) {
+                found = true;
+                break;
+            }
+        } else if (S_ISREG(st.st_mode)) {
+            if (file_unique_id(full) == id) {
+                strncpy(out_path, full, out_size - 1);
+                out_path[out_size - 1] = '\0';
+                found = true;
+                break;
+            }
+        }
+    }
+    closedir(d);
+    return found;
+#endif
+}
+
+bool file_path_from_id(int32_t id, const char* root_dir, char* out_path, size_t out_size) {
+    if (out_path == NULL || out_size == 0)
+        return false;
+    out_path[0] = '\0';
+    return find_file_by_id_under(id, root_dir, out_path, out_size);
+}
+
+static int32_t compute_entrynum(const char* filename) {
+    std::filesystem::path exeDir = getExecutablePath().parent_path();
+
+    const char* relativePath = filename;
+    if (relativePath[0] == '/' || relativePath[0] == '\\') {
+        relativePath++; // Move the pointer forward by one character
+    }
+
+    std::filesystem::path fullPath = exeDir / "data" / relativePath;
+    return file_unique_id(fullPath.string().c_str());
+}
+
+static std::ifstream openFile(const char* filename) {
+    std::filesystem::path exeDir = getExecutablePath().parent_path();
+
+    const char* relativePath = filename;
+    if (relativePath[0] == '/' || relativePath[0] == '\\') {
+        relativePath++; // Move the pointer forward by one character
+    }
+
+    std::filesystem::path fullPath = exeDir / "data" / relativePath;
+    OSReport("Warning: openFile: attempting to open file '%s'.\n", fullPath.string().c_str());
+    return std::ifstream(fullPath);
+}
+
+s32 DVDConvertPathToEntrynum(const char* path) {
+    s32 entrynum = compute_entrynum(path);
+    OSReport("Warning: DVDConvertPathToEntrynum(): file '%s' has entrynum '%d'.\n", path, entrynum);
+    return entrynum;
+}
+
+static s32 DVDOpen(const char* filename, DVDFileInfo* fileInfo) {
+    std::ifstream file = openFile(filename);
+    
+    if (file.is_open()) {
+        fileInfo->startAddr = 0;
+        
+        file.seekg(0, std::ios::end);
+        fileInfo->length = file.tellg();
+        fileInfo->callback = nullptr;
+        fileInfo->cb.state = DVD_STATE_END;
+        fileInfo->entrynum = compute_entrynum(filename);
+        file.close();
+
+        OSReport("Warning: DVDOpen(): opened file (entrynum %d) '%s'.\n", fileInfo->entrynum, filename);
+        return TRUE;
+    }
+
+    OSReport("Warning: DVDOpen(): file '%s' was not found.\n", filename);
+    return FALSE;
+}
+
+BOOL DVDFastOpen(s32 entryNum, DVDFileInfo* fileInfo) {
+    // again, fuck it, we ball
+
+    // search through entire data folder for the file
+    std::filesystem::path exeDir = getExecutablePath().parent_path();
+    std::filesystem::path fullPath = exeDir / "data";
+
+    OSReport("Warning: DVDFastOpen(): searching for file with entrynum '%d' in '%s'.\n", entryNum, fullPath.string().c_str());
+    
+    for (const auto& entry : std::filesystem::directory_iterator(fullPath)) {
+        s32 id = file_unique_id(entry.path().string().c_str());
+        // OSReport("Warning: DVDFastOpen(): file '%s' has entrynum '%d'.\n", entry.path().string().c_str(), id);
+        if (id == entryNum) {
+            return DVDOpen(entry.path().string().c_str(), fileInfo);
+        }
+    }
+
+    return FALSE;
+}
+
+static BOOL DVDClose(DVDFileInfo* fileInfo) {
+    return TRUE;
+}
+
+static s32 DVDGetCommandBlockStatus(const DVDCommandBlock* block) {
+    s32 retVal;
+
+	if (block->state == DVD_STATE_COVER_CLOSED) {
+		retVal = DVD_STATE_BUSY;
+	} else {
+		retVal = block->state;
+	}
+
+	return retVal;
+}
+
+static BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset,
+        DVDCallback callback, s32 prio) {
+    char path[MAX_PATH];
+    BOOL ret = TRUE;
+
+    if (!((0 <= offset) && (offset < fileInfo->length))) {
+        OSPanic(__FILE__, 0x2E3, "DVDReadAsync(): specified area is out of the file  ");
+    }
+    
+    if (!((0 <= offset + length) && (offset + length < fileInfo->length + DVD_MIN_TRANSFER_SIZE))) {
+        OSPanic(__FILE__, 0x2E9, "DVDReadAsync(): specified area is out of the file  ");
+    }
+
+    std::filesystem::path dataDir = getExecutablePath().parent_path() / "data";
+    if (!file_path_from_id(fileInfo->entrynum, dataDir.string().c_str(), path, sizeof(path))) {
+        OSReport("Warning: DVDReadAsyncPrio(): file (entrynum %d) was not found.\n", fileInfo->entrynum);
+        return FALSE;
+    }
+
+    fileInfo->callback = callback;
+    std::ifstream file(path, std::ios::binary);
+
+    // OSReport("Warning: DVDReadAsyncPrio(): opening file (entrynum %d) '%s'.\n", fileInfo->entrynum, path);
+
+    if (!file.is_open()) {
+        OSReport("Warning: DVDReadAsyncPrio(): file '%s' was not found.\n", path);
+        return FALSE;
+    }
+
+    file.seekg(offset, std::ios::beg);
+    file.read(reinterpret_cast<char*>(addr), length);
+    
+    if (file.fail()) {
+        ret = FALSE;
+    } else {
+        OSReport("DVDReadAsyncPrio(): Read %X bytes from file %s.\n", length, path);
+        if (callback) {
+            callback(ret, fileInfo);
+        }
+    }
+    
+    file.close();
+    return ret;
+}
+#define DVDGetFileInfoStatus(info) DVDGetCommandBlockStatus(&(info)->cb)
+
 #include <dolphin/gx/GXStruct.h>
 #include <dolphin/gx/GXFrameBuffer.h>
 #include <dolphin/gx/GXEnum.h>
@@ -18,6 +306,7 @@
 #include <dolphin/gx/GXFifo.h>
 #include <dolphin/gx/GXBump.h>
 #include <dolphin/os/OSThread.h>
+
 
 typedef struct {
     f32 x, y, z;

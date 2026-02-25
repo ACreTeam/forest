@@ -96,7 +96,7 @@ void DCZeroRange(void* addr, u32 size) { (void)addr;(void)size; }
 void DVDInit(void) {}
 BOOL DVDCheckDisk(void) { return FALSE; }
 BOOL DVDCloseDir(DVDDir* dir) { (void)dir; return TRUE; }
-s32 DVDConvertPathToEntrynum(const char* path) { (void)path; return -1; }
+// s32 DVDConvertPathToEntrynum(const char* path) { (void)path; return -1; }
 BOOL DVDOpenDir(const char* dirName, DVDDir* dir) { (void)dirName;(void)dir; return FALSE; }
 BOOL DVDReadDir(DVDDir* dir, DVDDirEntry* entry) { (void)dir;(void)entry; return FALSE; }
 
@@ -251,18 +251,18 @@ s32 DVDReadPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset, s32 p
     (void)fileInfo; (void)addr; (void)length; (void)offset; (void)prio;
     return -1;
 }
-BOOL DVDFastOpen(s32 entryNum, DVDFileInfo* fileInfo)
-{
-    (void)entryNum; (void)fileInfo;
-    return FALSE;
-}
-s32 DVDGetCommandBlockStatus(const DVDCommandBlock* block) { (void)block; return 0; }
-BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset,
-    DVDCallback callback, s32 prio)
-{
-    (void)fileInfo; (void)addr; (void)length; (void)offset; (void)callback; (void)prio;
-    return FALSE;
-}
+// BOOL DVDFastOpen(s32 entryNum, DVDFileInfo* fileInfo)
+// {
+//     (void)entryNum; (void)fileInfo;
+//     return FALSE;
+// }
+// s32 DVDGetCommandBlockStatus(const DVDCommandBlock* block) { (void)block; return 0; }
+// BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset,
+//     DVDCallback callback, s32 prio)
+// {
+//     (void)fileInfo; (void)addr; (void)length; (void)offset; (void)callback; (void)prio;
+//     return FALSE;
+// }
 
 /* -------------------------------------------------------------------------- */
 /* AR (ARAM)                                                                  */
@@ -687,18 +687,18 @@ void AISetStreamVolRight(u8 vol)
 /* -------------------------------------------------------------------------- */
 /* DVD (streaming / file) — stubs return failure so stream path gives up      */
 /* -------------------------------------------------------------------------- */
-BOOL DVDOpen(const char* filename, DVDFileInfo* fileInfo)
-{
-    (void)filename;
-    (void)fileInfo;
-    return FALSE;
-}
+// BOOL DVDOpen(const char* filename, DVDFileInfo* fileInfo)
+// {
+//     (void)filename;
+//     (void)fileInfo;
+//     return FALSE;
+// }
 
-BOOL DVDClose(DVDFileInfo* fileInfo)
-{
-    (void)fileInfo;
-    return TRUE;
-}
+// BOOL DVDClose(DVDFileInfo* fileInfo)
+// {
+//     (void)fileInfo;
+//     return TRUE;
+// }
 
 BOOL DVDPrepareStreamAsync(DVDFileInfo* fileInfo, u32 length, u32 offset,
                            DVDCallback callback)

@@ -38,7 +38,11 @@ JKRAramBlock* JKRDvdAramRipper::loadToAram(JKRDvdFile* dvdFile, u32 p1, JKRExpan
 
 JKRADCommand* JKRDvdAramRipper::loadToAram_Async(JKRDvdFile* dvdFile, u32 p1, JKRExpandSwitch expSwitch,
                                                  JKRADCommand::LoadCallback cb, u32 p4, u32 p5) {
+#ifndef TARGET_PC
     JKRADCommand* command = new (JKRGetSystemHeap(), -4) JKRADCommand();
+#else
+    JKRADCommand* command = new JKRADCommand();
+#endif
     command->mDvdFile = dvdFile;
     command->_1C = p1;
     command->mBlock = nullptr;
@@ -68,7 +72,11 @@ JKRADCommand* JKRDvdAramRipper::callCommand_Async(JKRADCommand* command) {
         isCmdTrdNull = false;
     } else {
         dvdFile->mAramThread = OSGetCurrentThread();
+#ifndef TARGET_PC
         JSUFileInputStream* stream = new (JKRGetSystemHeap(), -4) JSUFileInputStream(dvdFile);
+#else
+        JSUFileInputStream* stream = new JSUFileInputStream(dvdFile);
+#endif
         dvdFile->mInputStream = stream;
         u32 fileSize = dvdFile->getFileSize();
         if (command->_18 && fileSize > command->_18) {
@@ -79,7 +87,8 @@ JKRADCommand* JKRDvdAramRipper::callCommand_Async(JKRADCommand* command) {
             u8 buffer[0x40];
             u8* bufPtr = (u8*)ALIGN_NEXT((u32)buffer, 0x20);
             while (true) {
-                if (DVDReadPrio(dvdFile->getFileInfo(), bufPtr, 0x20, 0, 2) >= 0) {
+                // if (DVDReadPrio(dvdFile->getFileInfo(), bufPtr, 0x20, 0, 2) >= 0) {
+                if (DVDReadAsyncPrio(dvdFile->getFileInfo(), bufPtr, 0x20, 0, nullptr, 2) >= 0) {
                     break;
                 }
 
@@ -136,7 +145,7 @@ JKRADCommand* JKRDvdAramRipper::callCommand_Async(JKRADCommand* command) {
             }
         }
 
-        if (compression == 0) {
+        if (compression == JKRCOMPRESSION_NONE) {
             command->mStreamCommand =
                 JKRAramStream::write_StreamToAram_Async(stream, command->_1C, fileSize - command->_14, command->_14);
         } else if (compression == JKRCOMPRESSION_YAY0) {
@@ -348,7 +357,8 @@ u8* firstSrcData() {
     u32 transSize = MIN(transLeft, max);
 
     while (true) {
-        if (0 <= DVDReadPrio(srcFile->getFileInfo(), buf, transSize, 0, 2))
+        // if (0 <= DVDReadPrio(srcFile->getFileInfo(), buf, transSize, 0, 2))
+        if (0 <= DVDReadAsyncPrio(srcFile->getFileInfo(), buf, transSize, 0, nullptr, 2))
             break;
         if (!JKRDvdAramRipper::isErrorRetry())
             return nullptr;
@@ -374,7 +384,8 @@ u8* nextSrcData(u8* src) {
 
     JUT_ASSERT(transSize > 0);
     while (true) {
-        int result = DVDReadPrio(srcFile->getFileInfo(), (buf + limit), transSize, srcOffset, 2);
+        // int result = DVDReadPrio(srcFile->getFileInfo(), (buf + limit), transSize, srcOffset, 2);
+        int result = DVDReadAsyncPrio(srcFile->getFileInfo(), (buf + limit), transSize, srcOffset, nullptr, 2);
         if (result >= 0)
             break;
 

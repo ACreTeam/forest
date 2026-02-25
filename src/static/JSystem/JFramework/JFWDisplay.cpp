@@ -77,8 +77,11 @@ JFWDisplay* JFWDisplay::createManager(const GXRenderModeObj* rmode, JKRHeap* hea
 
 void JFWDisplay::destroyManager() {
     JUT_CONFIRM_MESSAGE(sManager);
-    delete sManager;
-    sManager = nullptr;
+
+    if (sManager != nullptr) {
+        delete sManager;
+        sManager = nullptr;
+    }
 }
 
 void callDirectDraw() {

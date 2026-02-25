@@ -34,7 +34,7 @@ void OSVReport(const char* fmt, va_list list) {
             if (print_mutex_initialized == FALSE) {
                 OSInitMutex(&print_mutex);
                 print_mutex_initialized = TRUE;
-                printf("*** OSVReport - OSInitMutex ***");
+                printf("*** OSVReport - OSInitMutex ***\n");
             }
             OSRestoreInterrupts(enable);
             if (cur_thread != NULL) {

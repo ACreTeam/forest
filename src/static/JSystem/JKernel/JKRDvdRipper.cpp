@@ -49,7 +49,8 @@ void* JKRDvdRipper::loadToMainRAM(JKRDvdFile* file, u8* buf, JKRExpandSwitch exp
         u8 buffer[64];
         u8* aligned_buf = (u8*)ALIGN_NEXT((u32)buffer, 32);
         while (true) {
-            if (DVDReadPrio(file->getFileInfo(), aligned_buf, 32, 0, 2) >= 0) {
+            // if (DVDReadPrio(file->getFileInfo(), aligned_buf, 32, 0, 2) >= 0) {
+            if (DVDReadAsyncPrio(file->getFileInfo(), aligned_buf, 32, 0, nullptr, 2) >= 0) {
                 break;
             }
             if (JKRDvdRipper::errorRetry == false) {
@@ -106,7 +107,8 @@ void* JKRDvdRipper::loadToMainRAM(JKRDvdFile* file, u8* buf, JKRExpandSwitch exp
             u8 buffer[64];
             u8* aligned_buf = (u8*)ALIGN_NEXT((u32)buffer, 32);
             while (true) {
-                if (DVDReadPrio(file->getFileInfo(), aligned_buf, 32, offset, 2) >= 0) {
+                // if (DVDReadPrio(file->getFileInfo(), aligned_buf, 32, offset, 2) >= 0) {
+                if (DVDReadAsyncPrio(file->getFileInfo(), aligned_buf, 32, offset, nullptr, 2) >= 0) {
                     break;
                 }
 
@@ -128,7 +130,8 @@ void* JKRDvdRipper::loadToMainRAM(JKRDvdFile* file, u8* buf, JKRExpandSwitch exp
             }
 
             while (true) {
-                if (DVDReadPrio(file->getFileInfo(), buf, readSize, offset, 2) >= 0) {
+                // if (DVDReadPrio(file->getFileInfo(), buf, readSize, offset, 2) >= 0) {
+                if (DVDReadAsyncPrio(file->getFileInfo(), buf, readSize, offset, nullptr, 2) >= 0) {
                     break;
                 }
 
@@ -155,7 +158,8 @@ void* JKRDvdRipper::loadToMainRAM(JKRDvdFile* file, u8* buf, JKRExpandSwitch exp
 
         /* Looks like a bug here */
 #ifndef FIXES
-        if (DVDReadPrio(file->getFileInfo(), mem, fileSize, 0, 2) < 0) {
+        // if (DVDReadPrio(file->getFileInfo(), mem, fileSize, 0, 2) < 0) {
+        if (DVDReadAsyncPrio(file->getFileInfo(), mem, fileSize, 0, nullptr, 2) < 0) {
             if (JKRDvdRipper::errorRetry == false) {
                 VIWaitForRetrace();
             }
@@ -168,7 +172,8 @@ void* JKRDvdRipper::loadToMainRAM(JKRDvdFile* file, u8* buf, JKRExpandSwitch exp
             return buf;
         }
 #else
-        while (DVDReadPrio(file->getFileInfo(), mem, fileSize, 0, 2) < 0) {
+        // while (DVDReadPrio(file->getFileInfo(), mem, fileSize, 0, 2) < 0) {
+        while (DVDReadAsyncPrio(file->getFileInfo(), mem, fileSize, 0, nullptr, 2) < 0) {
             if (JKRDvdRipper::errorRetry == false) {
                 if (allocated) {
                     JKRFree(buf);
@@ -368,6 +373,7 @@ static u8* firstSrcData() {
     u32 transSize = MIN(transLeft, size);
 
     while (true) {
+        // if (DVDReadPrio(srcFile->getFileInfo(), buf, transSize, srcOffset, 2) < 0) {
         if (DVDReadPrio(srcFile->getFileInfo(), buf, transSize, srcOffset, 2) < 0) {
             if (JKRDvdRipper::errorRetry == false) {
                 return nullptr;
@@ -398,7 +404,8 @@ static u8* nextSrcData(u8* nowData) {
     }
 
     while (true) {
-        if (DVDReadPrio(srcFile->getFileInfo(), (dst + size), n_size, srcOffset, 2) >= 0) {
+        // if (DVDReadPrio(srcFile->getFileInfo(), (dst + size), n_size, srcOffset, 2) >= 0) {
+        if (DVDReadAsyncPrio(srcFile->getFileInfo(), (dst + size), n_size, srcOffset, nullptr, 2) >= 0) {
             break;
         }
         // Oopsies, forgot to call the function

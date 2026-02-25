@@ -18,6 +18,12 @@
 #include "m_land.h"
 #include <string.h>
 
+#ifdef TARGET_PC
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
 // TODO: actually add all the stacks and headers
 
 OSThread graphThread;
@@ -76,7 +82,7 @@ extern void mainproc(void* val) {
     } while (msg != NULL);
 }
 
-u32 entry(void) {
+EXPORT u32 entry(void) {
     padmgr_Init(NULL);
     new_Debug_mode();
 
@@ -86,7 +92,11 @@ u32 entry(void) {
     return 0;
 }
 
-int main(void) {
+EXPORT int main(void) {
     OSReport("どうぶつの森 main2 開始\n");
+#ifndef TARGET_PC
     HotStartEntry = &entry;
+#else
+    return 0;
+#endif
 }
