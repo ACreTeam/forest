@@ -203,6 +203,8 @@ u16 OSGetFontEncode(void) { return 0; }
 void OSSetStringTable(const void* string_table) { (void)string_table; }
 BOOL OSLink(OSModuleInfo* newModule, void* bss) { (void)newModule; (void)bss; return TRUE; }
 BOOL OSUnlink(OSModuleInfo* module) { (void)module; return TRUE; }
+void OSSetSoundMode(u32 mode) { (void)mode; }
+s32 OSCheckActiveThreads(void) { return 0; }
 
 /* -------------------------------------------------------------------------- */
 /* OS error / context / memory                                                 */
@@ -738,7 +740,13 @@ void OSTicksToCalendarTime(OSTime ticks, OSCalendarTime* td)
     }
 }
 void GBAInit(void) {}
-int __strip(void) { return 0; }
+int _strip(void) { return 0; }
+
+/* -------------------------------------------------------------------------- */
+/* Runtime / compiler stubs (game code references when foresta is linked in)   */
+/* -------------------------------------------------------------------------- */
+int __abs(int x) { return x < 0 ? -x : x; }
+void* __alloca(size_t size) { return malloc(size); }
 
 /* -------------------------------------------------------------------------- */
 /* Probe (profiling) — no-op                                                  */

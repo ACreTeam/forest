@@ -722,7 +722,14 @@ int main(int argc, const char** argv) {
 #ifndef TARGET_PC
     moduleA = LoadLink("/foresta.rel.szs");
 #else
-    moduleA = LoadLink("foresta_mod.dll");
+    /* Foresta is linked statically into the executable; no DLL to load */
+    {
+        extern int foresta_main(void);
+        extern u32 entry(void);
+        HotStartEntry = (void*)entry;
+        foresta_main();
+    }
+    moduleA = NULL;
 #endif
     JW_Init2();
     initial_menu_cleanup();
@@ -743,7 +750,8 @@ int main(int argc, const char** argv) {
 #ifndef TARGET_PC
     UnLink(moduleA);
 #else
-    FreeLibrary(moduleA);
+    if (moduleA != NULL)
+        FreeLibrary(moduleA);
 #endif
     moduleA = NULL;
     if (StringTable != NULL) {

@@ -1,5 +1,7 @@
 #include "JSystem/JUtility/JUTAssertion.h"
 #include "JSystem/JKernel/JKRHeap.h"
+#include <cstdlib>
+#include <new>
 #include <dolphin/os.h>
 #include <dolphin/os/OSArena.h>
 #include <dolphin/os/OSAlloc.h>
@@ -7,6 +9,7 @@
 #include <dolphin/os/OSUtil.h>
 #include <dolphin/os.h>
 
+/* Exported from DOL so REL can import them (see FOREST_API in types.h) */
 JKRHeap* JKRHeap::sSystemHeap;
 JKRHeap* JKRHeap::sCurrentHeap;
 JKRHeap* JKRHeap::sRootHeap;
@@ -328,6 +331,37 @@ void JKRDisposer::operator delete(void* memory) noexcept {
 }
 void JKRDisposer::operator delete[](void* memory) noexcept {
     JKRHeap::free(memory, nullptr);
+}
+
+// global operator delete: route to JKR heap only if the pointer belongs to one
+void operator delete(void* memory) noexcept {
+    if (memory == nullptr) {
+        OSReport("operator delete: nullptr\n");
+        return;
+    }
+
+    JKRHeap* heap = JKRHeap::findFromRoot(memory);
+    if (heap != nullptr) {
+        OSReport("operator delete: %p, heap: %p\n", memory, heap);
+        JKRHeap::free(memory, heap);
+    } else {
+        std::free(memory);
+    }
+}
+
+void operator delete[](void* memory) noexcept {
+    if (memory == nullptr) {
+        OSReport("operator delete[]: nullptr\n");
+        return;
+    }
+
+    JKRHeap* heap = JKRHeap::findFromRoot(memory);
+    if (heap != nullptr) {
+        OSReport("operator delete[]: %p, heap: %p\n", memory, heap);
+        JKRHeap::free(memory, heap);
+    } else {
+        std::free(memory);
+    }
 }
 
 /*JKRHeap::TState::TState(const JKRHeap::TState::TArgument &arg, const JKRHeap::TState::TLocation &location)

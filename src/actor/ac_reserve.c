@@ -29,7 +29,7 @@ extern Gfx reserve_winter_DL_model[];
 extern Gfx obj_s_attentionT_model[];
 extern Gfx obj_w_attentionT_model[];
 
-static void aRSV_set_bgOffset(ACTOR*, int);
+static void aRSV_set_bgOffset(ACTOR* actor, int bgOffset);
 static void aRSV_setup_action(ACTOR* actor, int type);
 
 static void aRSV_actor_ct(ACTOR* actor, GAME* game) {

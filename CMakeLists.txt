@@ -980,8 +980,7 @@ endif()
 # ==============================================================================
 # On the GameCube, the DOL is the main executable containing engine code
 # (Dolphin SDK, JSystem, libforest, etc.) and the bootstrap (boot.c).
-# For the PC port, this is a standard executable with a PC entry point.
-# Engine symbols are exported so the REL module (DLL) can call them.
+# For the PC port, the DOL also links foresta (game logic) statically — one binary.
 
 add_executable(forest_dol src/pc/dol_main.c)
 if(WINDOWS_SDK_LIB_PATH)
@@ -989,6 +988,7 @@ if(WINDOWS_SDK_LIB_PATH)
 endif()
 target_link_libraries(forest_dol PRIVATE
     ${FOREST_STATIC_LIBS}
+    foresta_rel
     aurora::core
     aurora::pad
     aurora::si
@@ -999,55 +999,51 @@ target_link_libraries(forest_dol PRIVATE
 )
 set_target_properties(forest_dol PROPERTIES
     OUTPUT_NAME "animal_crossing"
-    ENABLE_EXPORTS TRUE
-    WINDOWS_EXPORT_ALL_SYMBOLS TRUE
 )
 
-# Export all symbols from the executable so the REL DLL can link against them.
-# ENABLE_EXPORTS makes CMake generate an import library (animal_crossing.lib) for
-# the executable; foresta_rel links to it. WINDOWS_EXPORT_ALL_SYMBOLS forces a .def
-# to be generated so the linker actually exports symbols and produces the .lib.
-if(MSVC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_SIMULATE_ID STREQUAL "MSVC")
-    # Keep all objects from engine static libs in the EXE so their symbols are
-    # available to the REL import library.
+if(MSVC OR (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_SIMULATE_ID STREQUAL "MSVC"))
     foreach(_lib IN LISTS FOREST_STATIC_LIBS)
         target_link_options(forest_dol PRIVATE
             "/WHOLEARCHIVE:$<TARGET_FILE:${_lib}>"
         )
     endforeach()
-    # clang-cl / MSVC: CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS + ENABLE_EXPORTS handles export flags.
+    target_link_options(forest_dol PRIVATE
+        "/WHOLEARCHIVE:$<TARGET_FILE:foresta_rel>"
+    )
 elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    target_link_options(forest_dol PRIVATE -Wl,--export-all-symbols)
+    target_link_options(forest_dol PRIVATE
+        -Wl,--whole-archive
+        $<TARGET_FILE:foresta_rel>
+        -Wl,--no-whole-archive
+    )
 elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    # Clang often uses lld on Linux, which does not support --export-all-symbols.
-    # Rely on -rdynamic / --export-dynamic (already set) for symbol export.
+    target_link_options(forest_dol PRIVATE
+        -Wl,--whole-archive
+        $<TARGET_FILE:foresta_rel>
+        -Wl,--no-whole-archive
+    )
 endif()
 
 # ==============================================================================
-# REL Shared Library — Foresta game logic module
+# Foresta game logic (static) — linked into the DOL executable
 # ==============================================================================
-# On the GameCube, foresta.rel is a relocatable module loaded at runtime
-# containing all game logic (actors, scenes, events, etc.).
-# For the PC port, this is a shared library (DLL on Windows, .so on Linux).
+# On the GameCube, foresta.rel is a relocatable module loaded at runtime.
+# For the PC port, foresta is built as a static library and linked into the
+# main executable so there is a single binary (no DLL).
 
-add_library(foresta_rel SHARED
+# Stubs are only for the REL-as-DLL build; when linking into the DOL we use the real symbols from boot.
+add_library(foresta_rel STATIC
     src/pc/rel_main.c
-    src/pc/foresta_rel_stubs.c
 )
-if(WINDOWS_SDK_LIB_PATH)
-  target_link_directories(foresta_rel PRIVATE "${WINDOWS_SDK_LIB_PATH}")
-endif()
 target_link_libraries(foresta_rel PRIVATE forest_common)
-# Aurora OS/core so REL resolves OSGetTime, OSBaseAddress, OSInit, etc. (same as DOL).
 target_link_libraries(foresta_rel PRIVATE aurora::os aurora::core aurora::mtx)
-set_target_properties(foresta_rel PROPERTIES
-    OUTPUT_NAME "foresta_mod"
-)
 
-# Link all REL static libraries into the shared library.
-# --whole-archive / /WHOLEARCHIVE ensures every object from the static libs is
-# included, not just those that resolve internal references. This is necessary
-# because game functions are called by the executable at runtime, not internally.
+# Engine libs the game code needs (DOL already has full FOREST_STATIC_LIBS).
+set(FOREST_STATIC_LIBS_FOR_REL ${FOREST_STATIC_LIBS})
+list(REMOVE_ITEM FOREST_STATIC_LIBS_FOR_REL boot JKernel)
+target_link_libraries(foresta_rel PRIVATE ${FOREST_STATIC_LIBS_FOR_REL})
+
+# Game logic libs; use whole-archive so all objects are included.
 if(MSVC OR (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_SIMULATE_ID STREQUAL "MSVC"))
     target_link_libraries(foresta_rel PRIVATE ${FOREST_REL_LIBS})
     foreach(_lib IN LISTS FOREST_REL_LIBS)
@@ -1062,13 +1058,3 @@ else()
         -Wl,--no-whole-archive
     )
 endif()
-
-# Also link static DOL engine libs directly so REL can resolve symbols even when
-# they are not exported via the executable import library on PC.
-set(FOREST_STATIC_LIBS_FOR_REL ${FOREST_STATIC_LIBS})
-list(REMOVE_ITEM FOREST_STATIC_LIBS_FOR_REL boot)
-target_link_libraries(foresta_rel PRIVATE ${FOREST_STATIC_LIBS_FOR_REL})
-
-# Link against the DOL executable's exported symbols.
-# CMake resolves this via the import library generated by ENABLE_EXPORTS.
-target_link_libraries(foresta_rel PRIVATE forest_dol)

@@ -244,20 +244,20 @@ class JKRHeap : public JKRDisposer {
         return sSystemHeap;
     }
 
-    static void* mCodeStart;
-    static void* mCodeEnd;
-    static void* mUserRamStart;
-    static void* mUserRamEnd;
-    static u32 mMemorySize;
+    static FOREST_API void* mCodeStart;
+    static FOREST_API void* mCodeEnd;
+    static FOREST_API void* mUserRamStart;
+    static FOREST_API void* mUserRamEnd;
+    static FOREST_API u32 mMemorySize;
 
-    static JKRHeap* sSystemHeap;
-    static JKRHeap* sCurrentHeap;
-    static JKRHeap* sRootHeap;
+    static FOREST_API JKRHeap* sSystemHeap;
+    static FOREST_API JKRHeap* sCurrentHeap;
+    static FOREST_API JKRHeap* sRootHeap;
 
-    static bool sDefaultFillFlag;
-    static bool sDefaultFillCheckFlag;
+    static FOREST_API bool sDefaultFillFlag;
+    static FOREST_API bool sDefaultFillCheckFlag;
 
-    static JKRHeapErrorHandler* mErrorHandler;
+    static FOREST_API JKRHeapErrorHandler* mErrorHandler;
 
   protected:
     /* 0x00 */ // vtable

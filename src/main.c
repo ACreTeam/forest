@@ -92,7 +92,7 @@ EXPORT u32 entry(void) {
     return 0;
 }
 
-EXPORT int main(void) {
+EXPORT int foresta_main(void) {
     OSReport("どうぶつの森 main2 開始\n");
 #ifndef TARGET_PC
     HotStartEntry = &entry;

@@ -442,6 +442,8 @@ void GXFlush(void) {}
 void GXDrawDone(void) {}
 void GXAbortFrame(void) {}
 void GXCallDisplayList(const void* list, u32 nbytes) { (void)list;(void)nbytes; }
+void GXBeginDisplayList(void* list, u32 size) { (void)list;(void)size; }
+u32 GXEndDisplayList(void) { return 0; }
 void GXPixModeSync(void) {}
 void GXReadXfRasMetric(u32* a, u32* b, u32* c, u32* d) { (void)a;(void)b;(void)c;(void)d; }
 void GXSetDrawDone(void) {}

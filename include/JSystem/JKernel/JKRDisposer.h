@@ -2,6 +2,7 @@
 #define JKRDISPOSER_H
 
 #include "types.h"
+#include <dolphin/os.h>
 #include "JSystem/JSupport/JSUList.h"
 
 #ifdef __cplusplus
@@ -33,5 +34,8 @@ class JKRDisposer {
 };
 }
 #endif
+
+void operator delete(void* memory) noexcept;
+void operator delete[](void* memory) noexcept;
 
 #endif

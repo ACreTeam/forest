@@ -21,6 +21,25 @@
 #define BSWAP64(x) x
 #endif
 
+#ifdef TARGET_PC
+#define DLLEXPORT __declspec(dllexport)
+#define DLLIMPORT __declspec(dllimport)
+#else
+#define DLLEXPORT
+#define DLLIMPORT
+#endif
+
+/* REL (DLL) imports these from the DOL (EXE); DOL defines and exports them */
+#if defined(TARGET_PC)
+#  if defined(IS_REL)
+#    define FOREST_API DLLIMPORT
+#  else
+#    define FOREST_API DLLEXPORT
+#  endif
+#else
+#  define FOREST_API
+#endif
+
 #define VER_GAFE01_00 0
 #define VER_GAFU01_00 1
 
