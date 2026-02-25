@@ -189,7 +189,7 @@ s32 DVDConvertPathToEntrynum(const char* path) {
     return entrynum;
 }
 
-static s32 DVDOpen(const char* filename, DVDFileInfo* fileInfo) {
+s32 DVDOpen(const char* filename, DVDFileInfo* fileInfo) {
     std::ifstream file = openFile(filename);
     
     if (file.is_open()) {
@@ -230,11 +230,11 @@ BOOL DVDFastOpen(s32 entryNum, DVDFileInfo* fileInfo) {
     return FALSE;
 }
 
-static BOOL DVDClose(DVDFileInfo* fileInfo) {
+BOOL DVDClose(DVDFileInfo* fileInfo) {
     return TRUE;
 }
 
-static s32 DVDGetCommandBlockStatus(const DVDCommandBlock* block) {
+s32 DVDGetCommandBlockStatus(const DVDCommandBlock* block) {
     s32 retVal;
 
 	if (block->state == DVD_STATE_COVER_CLOSED) {
@@ -246,7 +246,7 @@ static s32 DVDGetCommandBlockStatus(const DVDCommandBlock* block) {
 	return retVal;
 }
 
-static BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset,
+BOOL DVDReadAsyncPrio(DVDFileInfo* fileInfo, void* addr, s32 length, s32 offset,
         DVDCallback callback, s32 prio) {
     char path[MAX_PATH];
     BOOL ret = TRUE;
