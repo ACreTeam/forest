@@ -239,8 +239,6 @@ static void aBEE_caught(ACTOR* actorx, GAME* game) {
 }
 
 static void aBEE_attack_wait(ACTOR* actorx, GAME* game) {
-    // TODO: this function is suspicious, only matches when accessing actorx.
-    // It might be that these all are (BEE_ACTOR*, GAME*) funcs.
     BEE_ACTOR* bee = (BEE_ACTOR*)actorx;
 
     aBEE_calc_fly_angle(actorx);
@@ -262,8 +260,6 @@ static void aBEE_attack_wait(ACTOR* actorx, GAME* game) {
 }
 
 static void aBEE_attack(ACTOR* actorx, GAME* game) {
-    // TODO: this function is suspicious, only matches when accessing actorx.
-    // It might be that these all are (BEE_ACTOR*, GAME*) funcs.
     BEE_ACTOR* bee = (BEE_ACTOR*)actorx;
 
     aBEE_calc_fly_angle(actorx);
