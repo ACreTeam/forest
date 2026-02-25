@@ -249,20 +249,20 @@ u16 Jac_BnkVirtualToPhysical(u16 vID)
  * Address:	........
  * Size:	000040
  */
-u16 Jac_BnkPhysicalToVirtual(u16 bnk)
-{
-	// UNUSED FUNCTION
-}
+// u16 Jac_BnkPhysicalToVirtual(u16 bnk)
+// {
+// 	// UNUSED FUNCTION
+// }
 
 /*
  * --INFO--
  * Address:	........
  * Size:	000040
  */
-u16 Jac_WsPhysicalToVirtual(u16 ws)
-{
-	// UNUSED FUNCTION
-}
+// u16 Jac_WsPhysicalToVirtual(u16 ws)
+// {
+// 	// UNUSED FUNCTION
+// }
 
 /*
  * --INFO--

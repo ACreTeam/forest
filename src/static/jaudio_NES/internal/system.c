@@ -26,7 +26,7 @@ Na_SyncProc NA_SYNC_PROC = Nas_GetSyncDummy;
 
 static s32 Nas_StartDma(OSIoMesg* ioMsg, s32 priority, s32 direction, u32 device_addr, void* dram_addr, u32 size,
                         OSMesgQueue* mq, s32 medium, s8* dma_type);
-s32 Nas_BankOfsToAddr(s32 bank_id, u8* ctrl_p, WaveMedia* wave_media, s32 async);
+void Nas_BankOfsToAddr(s32 bank_id, u8* ctrl_p, WaveMedia* wave_media, s32 async);
 
 static s32 __Link_BankNum(s32 type, s32 id);
 static u8* __Load_Ctrl(s32 id);
@@ -1731,7 +1731,7 @@ static void __WaveTouch(wtstr* wavetouch_str, u32 ram_addr, WaveMedia* wave_medi
     }
 }
 
-s32 Nas_BankOfsToAddr(s32 bank_id, u8* ctrl_p, WaveMedia* wave_media, s32 async) {
+void Nas_BankOfsToAddr(s32 bank_id, u8* ctrl_p, WaveMedia* wave_media, s32 async) {
     Bgloadreq* preload;
     Bgloadreq* top_preload;
     smzwavetable* wavetable;

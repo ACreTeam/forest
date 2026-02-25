@@ -266,7 +266,7 @@ f32 JUTResFont::drawChar_scale(f32 pos_x, f32 pos_y, f32 scale_x, f32 scale_y, i
     int shift_width = (t_width + used_glyphs->mCellWidth) << 15;
     int texMinX = (t_width << 15) / tex_width;
     int texMinY = (t_height << 15) / tex_height;
-    int shift_height = t_height + used_glyphs->mCellHeight << 15;
+    int shift_height = (t_height + used_glyphs->mCellHeight) << 15;
     const u32 texMaxX = shift_width / tex_width;
     const u32 texMaxY = shift_height / tex_height;
     // end glyph section
@@ -438,7 +438,7 @@ void JUTResFont::loadImage(int code, GXTexMapID id) {
     if (pageIdx != _44 || i != _66) {
         GXInitTexObj(&_24, &mGlyphBlocks[i]->mData[pageIdx * mGlyphBlocks[i]->mTextureSize],
                      mGlyphBlocks[i]->mTextureWidth, mGlyphBlocks[i]->mTextureHeight,
-                     (GXTexFmt)mGlyphBlocks[i]->mTextureFormat, GX_CLAMP, GX_CLAMP, 0);
+                     (GXTexFmt)(u16)mGlyphBlocks[i]->mTextureFormat, GX_CLAMP, GX_CLAMP, 0);
 
         GXInitTexObjLOD(&_24, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, 0U, 0U, GX_ANISO_1);
         _44 = pageIdx;

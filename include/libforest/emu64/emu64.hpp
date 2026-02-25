@@ -582,7 +582,7 @@ class emu64 : public emu64_print {
     void emu64_init();
     void emu64_cleanup();
     void printInfo();
-    void panic(const char* msg, char* file, int line);
+    void panic(const char* msg, const char* file, int line);
 
     void emu64_change_ucode(void* ucode_p);
     void texconv_tile(u8* addr, u8* converted_addr, unsigned int wd, unsigned int fmt, unsigned int siz,
@@ -605,7 +605,7 @@ class emu64 : public emu64_print {
     void tlutconv(u16* src_tlut, u16* dst_tlut, unsigned int count, unsigned int tlut_fmt);
     int replace_combine_to_tev(Gfx* g);
     int combine_auto();
-    int combine_tev();
+    void combine_tev();
     void combine_manual();
     void combine();
     void zmode();

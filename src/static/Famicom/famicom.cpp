@@ -20,6 +20,7 @@
 #include "JSystem/ResTIMG.h"
 #include "JSystem/J2D/J2DGrafContext.h"
 #include "libc64/sprintf.h"
+#include "libforest/osreport.h"
 #include "libjsys/jsyswrapper.h"
 #include "jsyswrap_cpp.h"
 #include <stdio.h>

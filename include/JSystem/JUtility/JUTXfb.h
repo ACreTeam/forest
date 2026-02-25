@@ -86,7 +86,7 @@ class JUTXfb {
     static JUTXfb* sManager;
 
   private:
-    void* mBuffer[3];        // 00
+    u16* mBuffer[3];         // 00
     bool mXfbAllocated[3];   // 0c
     int mBufferNum;          // 10
     s16 mDrawingXfbIndex;    // 14

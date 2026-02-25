@@ -30,10 +30,10 @@ DSPchannel_* GetDspHandle(u8 idx)
  * Address:	........
  * Size:	000034
  */
-DSPchannel_* GetDspHandleNc(u8)
-{
-	// UNUSED FUNCTION
-}
+// DSPchannel_* GetDspHandleNc(u8)
+// {
+// 	// UNUSED FUNCTION
+// }
 
 /*
  * --INFO--
@@ -50,10 +50,10 @@ FXBuffer* GetFxHandle(u8 idx)
  * Address:	........
  * Size:	000030
  */
-FXBuffer* GetFxHandleNc(u8 idx)
-{
-	// UNUSED FUNCTION
-}
+// FXBuffer* GetFxHandleNc(u8 idx)
+// {
+// 	// UNUSED FUNCTION
+// }
 
 /*
  * --INFO--

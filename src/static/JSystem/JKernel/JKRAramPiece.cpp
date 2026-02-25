@@ -129,13 +129,13 @@ JKRAMCommand::JKRAMCommand() : mAramPieceCommandLink(this), mLink30(this) {
 }
 
 JKRAMCommand::~JKRAMCommand() {
-    if (this->_8C != nullptr) {
-        delete this->_8C;
-    }
+    // if (this->_8C != nullptr) {
+    //     delete this->_8C;
+    // }
 
-    if (this->_90 != nullptr) {
-        delete this->_90;
-    }
+    // if (this->_90 != nullptr) {
+    //     delete this->_90;
+    // }
 
     if (this->_94 != nullptr) {
         JKRFree(this->_94);

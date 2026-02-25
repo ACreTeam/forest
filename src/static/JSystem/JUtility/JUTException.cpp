@@ -5,6 +5,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/os.h>
 #include <dolphin/vi.h>
+#include <dolphin/os/OSLink.h>
 
 #include <stdio.h>
 #include <string.h>

@@ -63,15 +63,17 @@ static s32 DVDReadMutex(DVDFileInfo* fileInfo, void* addr, s32 len, s32 offs, ch
         OSSleepThread(&dvdt_sleep);
     }
 
+    s32 ret;
     while (TRUE) {
-        if (DVDReadPrio(fileInfo, addr, len, offs, 2) != -1 || error_callback == NULL) {
+        if ((ret = DVDReadPrio(fileInfo, addr, len, offs, 2)) != -1 || error_callback == NULL) {
             break;
         }
         error_callback(arg4, (u8*)addr);
     }
+    return ret;
 }
 
-extern void DVDT_ExtendPath(char* dst, char* ext) {
+extern void DVDT_ExtendPath(char* dst, const char* ext) {
     if (*audio_root_path != 0) {
         strcpy(dst, audio_root_path);
         if (*ext == '/') {
@@ -273,7 +275,7 @@ extern s32 DVDT_LoadtoARAM_Main(void* arg) {
     return 0;
 }
 
-extern s32 DVDT_LoadtoARAM(u32 owner, char* name, u32 dst, u32 src, u32 length, u32* status, Jac_DVDCallback callback) {
+extern s32 DVDT_LoadtoARAM(u32 owner, const char* name, u32 dst, u32 src, u32 length, u32* status, Jac_DVDCallback callback) {
     DVDCall call;
     void* cb = (void*)&call;
 
@@ -404,7 +406,7 @@ extern s32 DVDT_CheckPass(u32 owner, u32* status, Jac_DVDCallback callback) {
     return DVDT_AddTask((TaskCallback)__DVDT_CheckBack, cb, 0x58);
 }
 
-extern s32 Jac_CheckFile(char* file) {
+extern s32 Jac_CheckFile(const char* file) {
     static DVDFileInfo finfo;
 
     if (!Jac_DVDOpen(file, &finfo)) {
@@ -426,7 +428,7 @@ static u32 dvdfile_dics;
 static char dvd_file[32][64];
 static u32 dvd_entrynum[32];
 
-extern s32 Jac_RegisterFastOpen(char* file) {
+extern s32 Jac_RegisterFastOpen(const char* file) {
     int num;
     if (strlen(file) > 63) {
         return -1;
@@ -453,7 +455,7 @@ extern s32 Jac_RegisterFastOpen(char* file) {
     return num;
 }
 
-extern BOOL Jac_DVDOpen(char* name, DVDFileInfo* info) {
+extern BOOL Jac_DVDOpen(const char* name, DVDFileInfo* info) {
     int entry = Jac_RegisterFastOpen(name);
 
     if (entry == -1) {

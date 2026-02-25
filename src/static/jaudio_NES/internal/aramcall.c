@@ -52,7 +52,7 @@ u32 LoadAramSingle(char* filepath, u32 src, u32 length, u32* status, u32 dst)
  * Address:	........
  * Size:	000030
  */
-void Jac_WaveDirectorySet(char* directory)
+void Jac_WaveDirectorySet(const char* directory)
 {
 	strcpy(extdir, directory);
 }

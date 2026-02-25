@@ -10,7 +10,7 @@ typedef u32 (*ARAMCallback)(char* filename, u32 src, u32 length, u32* status, ja
 void Jac_RegisterARAMCallback(ARAMCallback callback);
 u32 LoadAram(char* filepath, u32* status, u32 dst);
 u32 LoadAramSingle(char* filepath, u32 src, u32 length, u32* status, u32 dst);
-void Jac_WaveDirectorySet(char* directory);
+void Jac_WaveDirectorySet(const char* directory);
 jaheap_* Get_AramMotherHeap(void);
 void Show_AramMotherHeap(void);
 void Collect_AramMotherHeap(void);

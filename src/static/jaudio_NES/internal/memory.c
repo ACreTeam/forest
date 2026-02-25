@@ -19,7 +19,7 @@ void __Nas_MemoryReconfig();
 void Emem_KillSwMember();
 void Dirty_AllWave();
 void Nas_SetDelayLine(s32 a, fxconfig* b, s32 c);
-int Nas_Init_Single(s32, s32);
+void Nas_Init_Single(s32, s32);
 /*
  * --INFO--
  * Address:	........
@@ -1147,7 +1147,7 @@ void* Nas_Alloc_Single(s32 a, s32 sampleBankID, u8* sampleAddr, s8 originalMediu
  * Address:	........
  * Size:	0000C4
  */
-int Nas_Init_Single(s32 a, s32 b) {
+void Nas_Init_Single(s32 a, s32 b) {
     u8* alloc = (u8*)Nas_2ndHeapAlloc(&AG.misc_heap, a);
     if (alloc == NULL) {
         AG.emem_persistent_wave_heap.heap.length = 0;

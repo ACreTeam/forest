@@ -31,7 +31,7 @@ extern u32 GetNeosRom_PreLoaded(void) {
     return init_load_size;
 }
 
-extern u32 SetPreCopy_NeosRom(u8* load_addr, u32 load_size, BOOL cut_flag) {
+extern void SetPreCopy_NeosRom(u8* load_addr, u32 load_size, BOOL cut_flag) {
     init_load_size = load_size;
     init_load_addr = load_addr;
     init_cut_flag = cut_flag;

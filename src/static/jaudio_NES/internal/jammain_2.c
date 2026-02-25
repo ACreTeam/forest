@@ -1865,7 +1865,7 @@ static u32 Cmd_Jmp()
  */
 static u32 Cmd_JmpF()
 {
-	Cmd_CallF();
+	return Cmd_CallF();
 }
 
 /*

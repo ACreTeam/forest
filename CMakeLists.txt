@@ -15,6 +15,10 @@ endif()
 # Use static MSVC runtime (/MT or /MTd) for consistency with Dawn/abseil
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+# Build all third-party dependencies as static libraries.
+# Only foresta_rel is explicitly SHARED (the game logic REL module).
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
 include("cmake/get_cpm.cmake")
 
 set(CPM_aurora_SOURCE "${PROJECT_SOURCE_DIR}/../aurora")
@@ -35,7 +39,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -84,16 +88,23 @@ target_compile_definitions(forest_common INTERFACE
 # Silence warnings that are pervasive in decompiled code
 target_compile_options(forest_common INTERFACE
     # C++17 removed 'register': allow it for GCN-era code
-    $<$<COMPILE_LANGUAGE:CXX>:-Wno-register>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-Wno-register>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<C_COMPILER_ID:MSVC>>:/wd5033>
     # Allow multi-character constants (used for FourCC tags like 'DATA')
-    -Wno-multichar
+    # (MSVC does not warn on multi-character constants by default)
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wno-multichar>
     # Pointer-to-int casts are pervasive in 32-bit GCN code
-    -Wno-pointer-to-int-cast
-    -Wno-int-to-pointer-cast
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wno-pointer-to-int-cast>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wno-int-to-pointer-cast>
+    $<$<C_COMPILER_ID:MSVC>:/wd4302>    # 'conversion': truncation from pointer
+    $<$<C_COMPILER_ID:MSVC>:/wd4311>    # pointer truncation from 'type' to 'type'
+    $<$<C_COMPILER_ID:MSVC>:/wd4312>    # conversion from 'type' to 'type' of greater size
     # Decompiled code has many sign/implicit conversion patterns
-    -Wno-implicit-function-declaration
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wno-implicit-function-declaration>
+    $<$<C_COMPILER_ID:MSVC>:/wd4013>    # function undefined; assuming extern returning int
     # Narrowing conversions (e.g. -1 to u16) are common in GCN-era initializers
-    $<$<COMPILE_LANGUAGE:CXX>:-Wno-c++11-narrowing>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-Wno-c++11-narrowing>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<C_COMPILER_ID:MSVC>>:/wd4838>
 )
 
 # Settings specific to static DOL libraries
@@ -880,6 +891,7 @@ target_link_libraries(forest_dol PRIVATE
     aurora::main
     aurora::mtx
     aurora::vi
+    aurora::os
 )
 set_target_properties(forest_dol PROPERTIES
     OUTPUT_NAME "animal_crossing"

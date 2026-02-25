@@ -87,20 +87,20 @@ static texture_cache_t texture_cache_bss = {
 static GXColor black_color = { 0, 0, 0, 0 };
 static GXColor white_color = { 255, 255, 255, 255 };
 
-static char* doltexwrapmode[] = { "CLAMP", "REPEAT", "MIRROR", "?" };
+static const char* doltexwrapmode[] = { "CLAMP", "REPEAT", "MIRROR", "?" };
 
-static char* dolfmttbl2[4][5] = {
+static const char* dolfmttbl2[4][5] = {
     { "CMPR", "Z", "CI", "IA", "I" },
     { "RGBA?", "Z", "CI", "IA", "I" },
     { "RGB4A3", "YUV", "CI", "IA", "RGB565" },
     { "RGBA8888", "Z", "CI?", "IA?", "RGB?" },
 };
 
-static char* dolfmttbl[] = { "I4", "I8", "IA4", "IA8", "RGB565", "RGB5A3", "RGBA8", "CMPR" };
+static const char* dolfmttbl[] = { "I4", "I8", "IA4", "IA8", "RGB565", "RGB5A3", "RGBA8", "CMPR" };
 
 typedef struct {
     u32 value;
-    char* name;
+    const char* name;
     u32 mask;
 } GeometryModeParameterInfo;
 
@@ -127,8 +127,8 @@ static const GeometryModeParameterInfo geomtbl[NUM_GEOMETRYMODE_FLAGS] = {
 
 typedef struct {
     u32 mask;
-    char* enabled;
-    char* disabled;
+    const char* enabled;
+    const char* disabled;
 } MatrixInfo;
 
 static const MatrixInfo gmtxtbl[] = {
@@ -143,7 +143,7 @@ typedef struct {
 } OtherModeOpt;
 
 typedef struct {
-    char* name;
+    const char* name;
     int shift;
     int len;
     OtherModeOpt opts[4];
@@ -824,7 +824,7 @@ void emu64::printInfo() {
 
 // @HACK
 // #pragma dont_inline on
-void emu64::panic(const char* msg, char* file, int line) {
+void emu64::panic(const char* msg, const char* file, int line) {
     if (file) {
         this->Printf0(VT_COL(RED, WHITE) "emu64 PANIC!! in %s line %d" VT_RST "\n", file, line);
     } else {
@@ -1318,7 +1318,7 @@ int emu64::combine_auto() {
         GXTevAlphaArg alpha_d = (GXTevAlphaArg)tbla[Ad][0]; /* Ad1 */
 
         /* @BUG - Is this alpha_c != GX_CC_ZERO check supposed to be alpha_c != GX_CA_ZERO? */
-        if (color_c != GX_CC_ZERO || color_d != GX_CC_CPREV || alpha_c != GX_CC_ZERO || alpha_d != GX_CA_APREV) {
+        if (color_c != GX_CC_ZERO || color_d != GX_CC_CPREV || alpha_c != GX_CA_ZERO || alpha_d != GX_CA_APREV) {
             if (color_a == GX_CC_ZERO) {
                 GXSetTevColorIn((GXTevStageID)stage, GX_CC_ZERO, color_b, color_c, color_d);
                 color_stages = (GXTevStageID)(stage + 1);
@@ -1364,7 +1364,7 @@ int emu64::combine_auto() {
     return 0;
 }
 
-int emu64::combine_tev() {
+void emu64::combine_tev() {
     
     if ((u8)this->combine_gfx.setcombine.cmd == G_SETCOMBINE_TEV) {
         int two_cycle = (this->othermode_high & G_CYC_2CYCLE) >> G_MDSFT_CYCLETYPE;

@@ -296,31 +296,37 @@ bool JKRHeap::isSubHeap(JKRHeap* heap) const {
     return false;
 }
 
-void* operator new(size_t byteCount) {
+void* JKRDisposer::operator new(size_t byteCount) {
     return JKRHeap::alloc(byteCount, 4, nullptr);
 }
-void* operator new(size_t byteCount, int alignment) {
+void* JKRDisposer::operator new(size_t byteCount, int alignment) {
     return JKRHeap::alloc(byteCount, alignment, nullptr);
+}
+void* JKRDisposer::operator new(size_t byteCount, JKRHeap* heap, int alignment) {
+    return JKRHeap::alloc(byteCount, alignment, heap);
 }
 void* operator new(size_t byteCount, JKRHeap* heap, int alignment) {
     return JKRHeap::alloc(byteCount, alignment, heap);
 }
 
-void* operator new[](size_t byteCount) {
+void* JKRDisposer::operator new[](size_t byteCount) {
     return JKRHeap::alloc(byteCount, 4, nullptr);
 }
-void* operator new[](size_t byteCount, int alignment) {
+void* JKRDisposer::operator new[](size_t byteCount, int alignment) {
     return JKRHeap::alloc(byteCount, alignment, nullptr);
+}
+void* JKRDisposer::operator new[](size_t byteCount, JKRHeap* heap, int alignment) {
+    return JKRHeap::alloc(byteCount, alignment, heap);
 }
 void* operator new[](size_t byteCount, JKRHeap* heap, int alignment) {
     return JKRHeap::alloc(byteCount, alignment, heap);
 }
 
 // this is not needed without the other pragma and asm bs
-void operator delete(void* memory) {
+void JKRDisposer::operator delete(void* memory) noexcept {
     JKRHeap::free(memory, nullptr);
 }
-void operator delete[](void* memory) {
+void JKRDisposer::operator delete[](void* memory) noexcept {
     JKRHeap::free(memory, nullptr);
 }
 

@@ -311,8 +311,6 @@ inline void JKRFreeToSysHeap(void* buf) {
 
 void JKRDefaultMemoryErrorRoutine(void*, u32, int);
 
-void* operator new(size_t);
-void* operator new(size_t, s32);
 void* operator new(size_t, JKRHeap*, int);
 
 // Placement new — only define if the compiler runtime hasn't already provided it.
@@ -325,12 +323,7 @@ inline void* operator new(size_t, void* buf) {
 #include <new> // provides placement new
 #endif
 
-void* operator new[](size_t);
-void* operator new[](size_t, s32);
 void* operator new[](size_t, JKRHeap*, int);
-
-void operator delete(void*) noexcept;
-void operator delete[](void*) noexcept;
 
 #endif
 #endif // !JKRHEAP_H

@@ -25,7 +25,7 @@ u8 JUTGamePad::CRumble::mStatus[PAD_MAX_CONTROLLERS];
 u32 JUTGamePad::CRumble::mEnabled = 0;
 JUTResetBtnCb JUTGamePad::C3ButtonReset::sCallback = nullptr;
 void* JUTGamePad::C3ButtonReset::sCallbackArg = nullptr;
-OSTime JUTGamePad::C3ButtonReset::sThreshold = (OSTime)(OS_TIMER_CLOCK / 60) * 30;
+OSTime JUTGamePad::C3ButtonReset::sThreshold;
 bool JUTGamePad::C3ButtonReset::sResetSwitchPushing = false;
 bool JUTGamePad::C3ButtonReset::sResetOccurred = false;
 s32 JUTGamePad::C3ButtonReset::sResetOccurredPort = 0;
@@ -39,6 +39,8 @@ JUTGamePad::JUTGamePad(EPadPort port)
     this->update();
     this->mPadRecord = nullptr;
     this->mPadReplay = nullptr;
+    if (!C3ButtonReset::sThreshold)
+        C3ButtonReset::sThreshold = (OSTime)(OS_TIMER_CLOCK / 60) * 30;
 }
 
 JUTGamePad::JUTGamePad() : mButtons(), mMainStick(), mSubStick(), mRumble(this), mLink(this), mButtonReset() {

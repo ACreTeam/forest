@@ -59,25 +59,6 @@ void ReconfigBATs(void)
 }
 
 /* -------------------------------------------------------------------------- */
-/* OS arena                                                                   */
-/* -------------------------------------------------------------------------- */
-void* OSGetArenaHi(void) { return (void*)arena_hi; }
-void* OSGetArenaLo(void) { return (void*)arena_lo; }
-void OSSetArenaHi(void* p) { (void)p; }
-void OSSetArenaLo(void* p) { (void)p; }
-
-/* -------------------------------------------------------------------------- */
-/* OS heap (used by OSAlloc macro -> OSAllocFromHeap(__OSCurrHeap, size))     */
-/* -------------------------------------------------------------------------- */
-volatile int __OSCurrHeap = 0;
-
-void* OSAllocFromHeap(int heap, u32 size)
-{
-    (void)heap;
-    return malloc((size_t)size);
-}
-
-/* -------------------------------------------------------------------------- */
 /* OS interrupts                                                              */
 /* -------------------------------------------------------------------------- */
 BOOL OSDisableInterrupts(void) { return FALSE; }
@@ -85,14 +66,8 @@ BOOL OSEnableInterrupts(void) { return FALSE; }
 BOOL OSRestoreInterrupts(BOOL level) { (void)level; return FALSE; }
 
 /* -------------------------------------------------------------------------- */
-/* OS time                                                                    */
-/* -------------------------------------------------------------------------- */
-OSTime OSGetTime(void) { return 0; }
-
-/* -------------------------------------------------------------------------- */
 /* OS init / alarm                                                            */
 /* -------------------------------------------------------------------------- */
-void OSInit(void) {}
 void OSInitAlarm(void) {}
 
 void OSCreateAlarm(OSAlarm* a) { (void)a; }
@@ -109,14 +84,6 @@ s32 OSSuspendThread(OSThread* t) { (void)t; return 0; }
 OSPriority OSGetThreadPriority(OSThread* t) { (void)t; return 0; }
 void OSInitThreadQueue(OSThreadQueue* q) { (void)q; }
 
-OSTick OSGetTick(void) { return 0; }
-
-void* OSInitAlloc(void* start, void* end, int maxHeaps) { (void)start;(void)end;(void)maxHeaps; return NULL; }
-
-#ifndef OSPhysicalToCached
-void* OSPhysicalToCached(u32 paddr) { (void)paddr; return NULL; }
-#endif
-
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt intr, __OSInterruptHandler h) { (void)intr;(void)h; return NULL; }
 u32 __OSUnmaskInterrupts(u32 mask) { (void)mask; return 0; }
 
@@ -129,8 +96,8 @@ void DCZeroRange(void* addr, u32 size) { (void)addr;(void)size; }
 void DVDInit(void) {}
 BOOL DVDCheckDisk(void) { return FALSE; }
 BOOL DVDCloseDir(DVDDir* dir) { (void)dir; return TRUE; }
-s32 DVDConvertPathToEntrynum(char* path) { (void)path; return -1; }
-BOOL DVDOpenDir(char* dirName, DVDDir* dir) { (void)dirName;(void)dir; return FALSE; }
+s32 DVDConvertPathToEntrynum(const char* path) { (void)path; return -1; }
+BOOL DVDOpenDir(const char* dirName, DVDDir* dir) { (void)dirName;(void)dir; return FALSE; }
 BOOL DVDReadDir(DVDDir* dir, DVDDirEntry* entry) { (void)dir;(void)entry; return FALSE; }
 
 typedef void (*VIRetraceCallback)(u32);
@@ -157,7 +124,12 @@ void DSPSendMailToDSP(u32 mail) { (void)mail; }
 /* -------------------------------------------------------------------------- */
 u32 OSGetStackPointer(void) { return 0; }
 OSThread* OSGetCurrentThread(void) { return NULL; }
-void OSExitThread(void* val) { (void)val; for(;;); }
+void OSExitThread(void* val)
+{
+    (void)val;
+    fflush(stdout);
+    abort();
+}
 BOOL OSSetThreadPriority(OSThread* t, OSPriority p) { (void)t; (void)p; return TRUE; }
 s32 OSEnableScheduler(void) { return 0; }
 void OSYieldThread(void) {}
@@ -715,7 +687,7 @@ void AISetStreamVolRight(u8 vol)
 /* -------------------------------------------------------------------------- */
 /* DVD (streaming / file) — stubs return failure so stream path gives up      */
 /* -------------------------------------------------------------------------- */
-BOOL DVDOpen(char* filename, DVDFileInfo* fileInfo)
+BOOL DVDOpen(const char* filename, DVDFileInfo* fileInfo)
 {
     (void)filename;
     (void)fileInfo;

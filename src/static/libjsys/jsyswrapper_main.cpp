@@ -1,3 +1,19 @@
+#include "libjsys/jsyswrapper.h"
+#include <JSystem/JSystem.h>
+#include <JSystem/JKernel/JKRHeap.h>
+#include <JSystem/JKernel/JKRExpHeap.h>
+#include <JSystem/JKernel/JKRDecomp.h>
+#include <JSystem/JKernel/JKRDvdRipper.h>
+#include <JSystem/JUtility/JUTFader.h>
+#include <JSystem/JUtility/JUTFont.h>
+#include <JSystem/JUtility/JUTDbPrint.h>
+#include <JSystem/JUtility/JUTGamePad.h>
+#include <JSystem/JUtility/JUTConsole.h>
+#include <JSystem/JUtility/JUTException.h>
+#include <JSystem/J2D/J2DGrafContext.h>
+#include <JSystem/JFramework/JFWDisplay.h>
+#include <JSystem/JFramework/JFWSystem.h>
+
 extern void JC_JUTFader_delete(void* fader) {
     delete reinterpret_cast<JUTFader*>(fader);
 }
@@ -370,7 +386,7 @@ extern void* JC__JKRMountArchive(const char* path, int mount_mode, void* heap, i
 }
 
 extern CSDIFileEntry* JC__JKRGetResourceEntry_byName(u32 root_name, const char* res_name, void* archive) {
-    JKRGetResourceEntry_byName(root_name, res_name, reinterpret_cast<JKRArchive*>(archive));
+    return reinterpret_cast<CSDIFileEntry*>(JKRGetResourceEntry_byName(root_name, res_name, reinterpret_cast<JKRArchive*>(archive)));
 }
 
 extern void JC_JKRAramHeap_dump(void* heap) {

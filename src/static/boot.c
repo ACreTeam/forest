@@ -1,5 +1,6 @@
 #include "boot.h"
 
+#include <stdio.h>
 #include <dolphin/dvd.h>
 #include <dolphin/os.h>
 #include <dolphin/os/OSArena.h>
@@ -7,6 +8,7 @@
 #include <dolphin/os/OSModule.h>
 #include <dolphin/os/OSReset.h>
 #include <dolphin/pad.h>
+#include "aurora/aurora.h"
 #include "libforest/fault.h"
 #include "jaudio_NES/game64.h"
 #include "libc64/malloc.h"
@@ -26,6 +28,7 @@
 #include "initial_menu.h"
 #include "libforest/batconfig.h"
 #include <dolphin/os/OSAlarm.h>
+#include <stdlib.h>
 #include "dvderr.h"
 #include "libforest/osreport.h"
 
@@ -466,6 +469,35 @@ void adjustOSArena() {
   bzero(arenalo, ((u32)arenahi - (u32)arenalo));
 }
 
+static void log_callback(AuroraLogLevel level, const char* module, const char* message, unsigned int len) {
+  const char* levelStr;
+  FILE* out = stdout;
+  switch (level) {
+  case LOG_DEBUG:
+    levelStr = "DEBUG";
+    break;
+  case LOG_INFO:
+    levelStr = "INFO";
+    break;
+  case LOG_WARNING:
+    levelStr = "WARNING";
+    break;
+  case LOG_ERROR:
+    levelStr = "ERROR";
+    out = stderr;
+    break;
+  case LOG_FATAL:
+    levelStr = "FATAL";
+    out = stderr;
+    break;
+  }
+  fprintf(out, "[%s: %s;%s]\n", levelStr, module, message);
+  if (level == LOG_FATAL) {
+    fflush(out);
+    abort();
+  }
+}
+
 /**
  * @brief Standard C main function/entry point
  * 
@@ -474,6 +506,15 @@ void adjustOSArena() {
  * @return int exitCode
  */
 int main(int argc, const char** argv) {
+
+  const AuroraConfig config = {
+    .appName = "Demo",
+    .logCallback = &log_callback,
+    .mem1Size = 256 * 1024 * 1024,
+  };
+  AuroraInfo initInfo = aurora_initialize(argc, argv, &config);
+
+
   static fault_client
     my_fault_client1,
     my_fault_client2,
@@ -481,7 +522,7 @@ int main(int argc, const char** argv) {
     my_fault_client4,
     my_fault_client5,
     my_fault_client6;
-  
+
   static const boot_tbl_t tbl = {
     "L+R+X+Y+Down, START BUTTON",
     PAD_TRIGGER_L | PAD_TRIGGER_R | PAD_BUTTON_X | PAD_BUTTON_Y | PAD_BUTTON_DOWN,
@@ -524,15 +565,17 @@ int main(int argc, const char** argv) {
   OSInitAlarm();
 
   /* Initialize stack */
-  var1 = ((u32)OSGetStackPointer() - 0x100);
-  var2 = OSGetCurrentThread();
-  base = (u32*)var1;
+  {
+    // var1 = ((u32)OSGetStackPointer() - 0x100);
+    // var2 = OSGetCurrentThread();
+    // base = (u32*)var1;
 
-  if ((u8*)base < var2->stackBase) {
-    basenext = (u32*)var2->stackEnd + 1;
-    if (base > basenext) {
-      memset(basenext, 0xfd, (u32)base - (u32)basenext);
-    }
+    // if ((u8*)base < var2->stackBase) {
+    //   basenext = (u32*)var2->stackEnd + 1;
+    //   if (base > basenext) {
+    //     memset(basenext, 0xfd, (u32)base - (u32)basenext);
+    //   }
+    // }
   }
 
   /* Reset N64 NMI buffer*/
@@ -568,17 +611,19 @@ int main(int argc, const char** argv) {
   }
 
   /* Initialize zurumode levels */
-  diskId = DVDGetCurrentDiskID();
-  if (diskId->gameVersion == 0x99) {
-    APPNMI_DEBUGMODE_SET();
-  }
-  if (diskId->gameVersion >= 0x90) {
-    APPNMI_TESTMODE_SET();
-  }
+  {
+    // diskId = DVDGetCurrentDiskID();
+    // if (diskId->gameVersion == 0x99) {
+    //   APPNMI_DEBUGMODE_SET();
+    // }
+    // if (diskId->gameVersion >= 0x90) {
+    //   APPNMI_TESTMODE_SET();
+    // }
 
-  if (diskId->gameVersion >= 0x90) {
-    OSReport("ZURUMODE2 ENABLE\n");
-    APPNMI_ZURUMODE2_SET();
+    // if (diskId->gameVersion >= 0x90) {
+    //   OSReport("ZURUMODE2 ENABLE\n");
+    //   APPNMI_ZURUMODE2_SET();
+    // }
   }
 
   OSReport("osAppNMIBuffer[15]=0x%08x\n", osAppNMIBuffer[15]);
@@ -626,10 +671,10 @@ int main(int argc, const char** argv) {
   JC_JUTAssertion_changeDisplayTime(600);
 
   OSReport("InitialStartTime=%u us\n", (u32)OSTicksToMicroseconds((u64)InitialStartTime));
-  sound_initial();
+  // sound_initial();
   initial_menu_init();
   dvderr_init();
-  sound_initial2();
+  // sound_initial2();
 
   if ((OSGetConsoleType() & OS_CONSOLE_DEVELOPMENT) == 0) {
     OSReport("以降OSReportを無効\n"); /* OSReport disabled from now on. */
@@ -667,5 +712,7 @@ int main(int argc, const char** argv) {
 
   OSReport("どうぶつの森ブートローダ終了\n"); /* Animal Crossing bootloader end */
   JW_Cleanup();
+
+  aurora_shutdown();
   return 0;
 }
