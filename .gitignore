@@ -41,6 +41,9 @@ compile_commands.json
 !requirements.txt
 *.exe
 
+# *.nix (Nix related stuff that should not bother anyone else)
+*.nix
+
 # For saving work files into (like IDB)
 temp/
 
